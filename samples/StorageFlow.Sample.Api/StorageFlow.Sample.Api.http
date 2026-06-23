@@ -1,0 +1,42 @@
+@host = http://localhost:5078
+@objectKey = replace-with-upload-result-object-key
+
+GET {{host}}/
+
+###
+
+POST {{host}}/api/storage/upload
+Content-Type: multipart/form-data; boundary=sample
+
+--sample
+Content-Disposition: form-data; name="file"; filename="sample.pdf"
+Content-Type: application/pdf
+
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog >>
+endobj
+trailer
+<< /Root 1 0 R >>
+%%EOF
+--sample--
+
+###
+
+GET {{host}}/api/storage/download/{{objectKey}}
+
+###
+
+GET {{host}}/api/storage/exists/{{objectKey}}
+
+###
+
+GET {{host}}/api/storage/presigned/{{objectKey}}
+
+###
+
+GET {{host}}/api/storage/delivery/{{objectKey}}
+
+###
+
+DELETE {{host}}/api/storage/{{objectKey}}

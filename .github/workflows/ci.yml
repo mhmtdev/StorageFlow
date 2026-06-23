@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+
+jobs:
+  fast-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - run: dotnet restore StorageFlow.sln
+      - name: Release build
+        run: dotnet build StorageFlow.sln -c Release --no-restore --warnaserror
+      - name: Unit tests
+        run: >-
+          dotnet test tests/StorageFlow.Tests.Unit/StorageFlow.Tests.Unit.csproj
+          -c Release --no-build --logger "trx;LogFileName=unit.trx"
+          --collect "XPlat Code Coverage"
+      - name: Component tests
+        run: >-
+          dotnet test tests/StorageFlow.Tests.Component/StorageFlow.Tests.Component.csproj
+          -c Release --no-build --logger "trx;LogFileName=component.trx"
+          --collect "XPlat Code Coverage"
+      - name: Verify fast tests have no skips
+        shell: bash
+        run: |
+          if find tests/StorageFlow.Tests.Unit tests/StorageFlow.Tests.Component \
+            -path '*/TestResults/*.trx' -exec grep -H 'outcome="NotExecuted"' {} + | grep -q .; then
+            echo "Unit and component suites must complete with zero skipped tests."
+            exit 1
+          fi
+      - name: Pack public packages
+        shell: bash
+        run: |
+          projects=(
+            src/StorageFlow.Abstractions/StorageFlow.Abstractions.csproj
+            src/StorageFlow.Core/StorageFlow.Core.csproj
+            src/StorageFlow.Provider.S3/StorageFlow.Provider.S3.csproj
+            src/StorageFlow.Provider.Minio/StorageFlow.Provider.Minio.csproj
+            src/StorageFlow.Provider.RustFs/StorageFlow.Provider.RustFs.csproj
+            src/StorageFlow.Extension.Redis/StorageFlow.Extension.Redis.csproj
+          )
+          for project in "${projects[@]}"; do
+            dotnet pack "$project" -c Release --no-build --no-restore -o artifacts/packages
+          done
+      - name: Verify package boundaries
+        shell: bash
+        run: |
+          package_count=$(find artifacts/packages -maxdepth 1 -name '*.nupkg' | wc -l | tr -d ' ')
+          if [ "$package_count" -ne 6 ]; then
+            echo "Expected 6 public packages, found $package_count."
+            exit 1
+          fi
+
+          core_package=$(find artifacts/packages -name 'StorageFlow.Core.*.nupkg' -print -quit)
+          unzip -l "$core_package" | grep -q 'StorageFlow.Core.dll'
+          for package in artifacts/packages/*.nupkg; do
+            assembly_name=$(basename "$package" | sed -E 's/\.[0-9]+\..*$//')
+            unzip -l "$package" | grep -q "lib/net9.0/$assembly_name.dll"
+            unzip -l "$package" | grep -q "lib/net9.0/$assembly_name.xml"
+            if unzip -p "$package" 'lib/net9.0/*.dll' | strings | grep -E 'InMemoryStorageProvider|UseInMemory'; then
+              echo "InMemory APIs leaked into $package."
+              exit 1
+            fi
+            if unzip -p "$package" '*.nuspec' | grep -q 'dependency id="StorageFlow.Testing"'; then
+              echo "StorageFlow.Testing dependency leaked into $package."
+              exit 1
+            fi
+          done
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: artifacts/packages/*.nupkg
+          if-no-files-found: error
+      - name: Upload fast test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-test-results
+          path: '**/TestResults/**'
+
+  docker-integration:
+    runs-on: ubuntu-latest
+    needs: fast-tests
+    timeout-minutes: 45
+    env:
+      STORAGEFLOW_TEST_DOCKER: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Verify Docker availability
+        run: docker info
+      - run: dotnet restore tests/StorageFlow.Tests.Integration/StorageFlow.Tests.Integration.csproj
+      - name: Docker integration tests
+        run: >-
+          dotnet test tests/StorageFlow.Tests.Integration/StorageFlow.Tests.Integration.csproj
+          -c Release --no-restore -p:TreatWarningsAsErrors=true
+          --logger "trx;LogFileName=integration.trx"
+          --collect "XPlat Code Coverage"
+      - name: Verify Docker tests have no skips
+        shell: bash
+        run: |
+          if find tests/StorageFlow.Tests.Integration \
+            -path '*/TestResults/*.trx' -exec grep -H 'outcome="NotExecuted"' {} + | grep -q .; then
+            echo "Docker integration tests were enabled but one or more tests were skipped."
+            exit 1
+          fi
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-integration-results
+          path: '**/TestResults/**'

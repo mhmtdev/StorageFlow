@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <RootNamespace>StorageFlow.Provider.S3</RootNamespace>
+    <PackageId>StorageFlow.Provider.S3</PackageId>
+    <Title>StorageFlow Provider for AWS S3</Title>
+    <Description>AWS S3 provider for StorageFlow with default credential chain support, streaming downloads, object metadata, and presigned URLs.</Description>
+    <PackageTags>$(StorageFlowPackageTags);aws;aws-s3;cloud-storage;presigned-url</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StorageFlow.Abstractions\StorageFlow.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Link="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="4.0.24.2" />
+  </ItemGroup>
+
+</Project>

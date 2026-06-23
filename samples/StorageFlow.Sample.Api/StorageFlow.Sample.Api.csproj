@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>StorageFlow-Sample-Api-9f8db7c7-401b-4ce8-a554-f3a3a87c56e1</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\StorageFlow.Abstractions\StorageFlow.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\StorageFlow.Core\StorageFlow.Core.csproj" />
+    <ProjectReference Include="..\..\src\StorageFlow.Provider.Minio\StorageFlow.Provider.Minio.csproj" />
+    <ProjectReference Include="..\..\src\StorageFlow.Provider.S3\StorageFlow.Provider.S3.csproj" />
+  </ItemGroup>
+
+</Project>

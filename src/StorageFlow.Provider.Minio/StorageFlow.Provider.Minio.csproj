@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <RootNamespace>StorageFlow.Provider.Minio</RootNamespace>
+    <PackageId>StorageFlow.Provider.Minio</PackageId>
+    <Title>StorageFlow Provider for MinIO</Title>
+    <Description>MinIO provider for StorageFlow with streaming downloads, object metadata, standard upload headers, and presigned URLs.</Description>
+    <PackageTags>$(StorageFlowPackageTags);minio;self-hosted-storage;presigned-url</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StorageFlow.Abstractions\StorageFlow.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Link="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="4.0.24.2" />
+    <PackageReference Include="Minio" Version="7.0.0" />
+    <PackageReference Include="System.IO.Pipelines" Version="10.0.0" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <Authors>Mehmet Arıkan</Authors>
+    <Copyright>Copyright (c) 2026 Mehmet Arıkan and contributors</Copyright>
+    <PackageProjectUrl>https://github.com/mhmtdev/StorageFlow</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mhmtdev/StorageFlow</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <StorageFlowPackageTags>storage;object-storage;dotnet;provider-agnostic;s3-compatible</StorageFlowPackageTags>
+  </PropertyGroup>
+</Project>

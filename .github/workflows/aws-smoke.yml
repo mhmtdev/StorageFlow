@@ -1,0 +1,41 @@
+name: AWS S3 Smoke Tests
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  aws-smoke:
+    runs-on: ubuntu-latest
+    environment: aws-integration
+    env:
+      STORAGEFLOW_TEST_AWS_ENABLED: 'true'
+      STORAGEFLOW_TEST_AWS_REGION: ${{ vars.AWS_REGION }}
+      STORAGEFLOW_TEST_AWS_BUCKET: ${{ vars.AWS_TEST_BUCKET }}
+      STORAGEFLOW_TEST_AWS_PREFIX: storageflow-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - run: dotnet restore tests/StorageFlow.Tests.Cloud/StorageFlow.Tests.Cloud.csproj
+      - name: Run AWS smoke tests
+        run: >-
+          dotnet test tests/StorageFlow.Tests.Cloud/StorageFlow.Tests.Cloud.csproj
+          -c Release --no-restore --logger "trx;LogFileName=aws-cloud.trx"
+      - name: Upload AWS test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aws-cloud-results
+          path: '**/TestResults/**'

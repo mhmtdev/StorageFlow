@@ -1,0 +1,65 @@
+# Build outputs
+**/[Bb]in/
+**/[Oo]bj/
+**/[Oo]ut/
+**/[Pp]ublish/
+artifacts/
+
+# NuGet package outputs
+*.nupkg
+*.snupkg
+
+# Test and coverage outputs
+**/[Tt]est[Rr]esults/
+*.trx
+*.coverage
+*.coveragexml
+coverage.cobertura.xml
+coverage.opencover.xml
+coverage.json
+coverage.info
+[Cc]overage[Rr]eport/
+
+# BenchmarkDotNet generated artifacts
+BenchmarkDotNet.Artifacts/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.csproj.user
+
+# JetBrains Rider and ReSharper
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+# Visual Studio Code workspace settings
+.vscode/
+
+# Local environment and secret files
+.env
+.env.*
+!.env.example
+*.local.json
+appsettings.Local.json
+appsettings.*.Local.json
+secrets.json
+*.runsettings.user
+*.pfx
+*.p12
+*.key
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*~
+
+# Operating system files
+.DS_Store
+**/.DS_Store
+Thumbs.db
+Desktop.ini

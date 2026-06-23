@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <RootNamespace>StorageFlow.Provider.RustFs</RootNamespace>
+    <PackageId>StorageFlow.Provider.RustFs</PackageId>
+    <Title>StorageFlow Provider for RustFS</Title>
+    <Description>RustFS provider for StorageFlow with S3-compatible uploads, streaming downloads, object metadata, and presigned URLs.</Description>
+    <PackageTags>$(StorageFlowPackageTags);rustfs;self-hosted-storage;presigned-url</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StorageFlow.Abstractions\StorageFlow.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Link="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="4.0.24.2" />
+  </ItemGroup>
+
+</Project>
