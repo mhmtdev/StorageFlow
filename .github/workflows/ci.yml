@@ -77,6 +77,11 @@ jobs:
             assembly_name=$(basename "$package" | sed -E 's/\.[0-9]+\..*$//')
             unzip -l "$package" | grep -q "lib/net9.0/$assembly_name.dll"
             unzip -l "$package" | grep -q "lib/net9.0/$assembly_name.xml"
+            readme_heading=$(unzip -p "$package" README.md | sed -n '1p' | tr -d '\r')
+            if [ "$readme_heading" != "# $assembly_name" ]; then
+              echo "Package README heading does not match $assembly_name."
+              exit 1
+            fi
             if unzip -p "$package" 'lib/net9.0/*.dll' | strings | grep -E 'InMemoryStorageProvider|UseInMemory'; then
               echo "InMemory APIs leaked into $package."
               exit 1

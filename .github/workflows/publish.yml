@@ -110,6 +110,12 @@ jobs:
 
           for package in artifacts/packages/*.nupkg; do
             [[ "$package" == *.snupkg ]] && continue
+            assembly_name=$(basename "$package" | sed -E 's/\.[0-9]+\..*$//')
+            readme_heading=$(unzip -p "$package" README.md | sed -n '1p' | tr -d '\r')
+            if [ "$readme_heading" != "# $assembly_name" ]; then
+              echo "Package README heading does not match $assembly_name."
+              exit 1
+            fi
             if unzip -p "$package" '*.nuspec' | grep -q 'dependency id="StorageFlow.Testing"'; then
               echo "StorageFlow.Testing dependency leaked into $package."
               exit 1
