@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/mhmtdev/StorageFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/mhmtdev/StorageFlow/actions/workflows/ci.yml)
 
-[Getting Started](#quick-start) | [Packages](#packages) | [Contributing](CONTRIBUTING.md) | [Security](SECURITY.md) | [MIT License](LICENSE)
+[Getting Started](#quick-start) | [Packages](#packages) | [Contributing](CONTRIBUTING.md) | [Releasing](RELEASING.md) | [Security](SECURITY.md) | [MIT License](LICENSE)
 
 StorageFlow is a provider-agnostic object storage framework for .NET. It keeps
 application code independent from AWS S3, MinIO, and RustFS while providing one

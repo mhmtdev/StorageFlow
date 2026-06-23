@@ -65,8 +65,9 @@ jobs:
         shell: bash
         run: |
           package_count=$(find artifacts/packages -maxdepth 1 -name '*.nupkg' | wc -l | tr -d ' ')
-          if [ "$package_count" -ne 6 ]; then
-            echo "Expected 6 public packages, found $package_count."
+          symbol_count=$(find artifacts/packages -maxdepth 1 -name '*.snupkg' | wc -l | tr -d ' ')
+          if [ "$package_count" -ne 6 ] || [ "$symbol_count" -ne 6 ]; then
+            echo "Expected 6 public packages and 6 symbol packages; found $package_count and $symbol_count."
             exit 1
           fi
 
@@ -89,7 +90,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nuget-packages
-          path: artifacts/packages/*.nupkg
+          path: |
+            artifacts/packages/*.nupkg
+            artifacts/packages/*.snupkg
           if-no-files-found: error
       - name: Upload fast test results
         if: always()

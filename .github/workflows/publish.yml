@@ -1,0 +1,169 @@
+name: Publish NuGet
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+  STORAGEFLOW_TEST_DOCKER: 'true'
+
+jobs:
+  validate-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Resolve package version
+        id: version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag '$GITHUB_REF_NAME' is not a supported SemVer release tag."
+            exit 1
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Verify tag belongs to main
+        shell: bash
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - run: dotnet restore StorageFlow.sln
+
+      - name: Release build
+        run: >-
+          dotnet build StorageFlow.sln -c Release --no-restore --warnaserror
+          -p:Version=${{ steps.version.outputs.value }}
+
+      - name: Unit tests
+        run: >-
+          dotnet test tests/StorageFlow.Tests.Unit/StorageFlow.Tests.Unit.csproj
+          -c Release --no-build --logger "trx;LogFileName=unit.trx"
+
+      - name: Component tests
+        run: >-
+          dotnet test tests/StorageFlow.Tests.Component/StorageFlow.Tests.Component.csproj
+          -c Release --no-build --logger "trx;LogFileName=component.trx"
+
+      - name: Docker integration tests
+        run: >-
+          dotnet test tests/StorageFlow.Tests.Integration/StorageFlow.Tests.Integration.csproj
+          -c Release --no-build --logger "trx;LogFileName=integration.trx"
+
+      - name: Verify tests have no skips
+        shell: bash
+        run: |
+          if find tests -path '*/TestResults/*.trx' \
+            -exec grep -H 'outcome="NotExecuted"' {} + | grep -q .; then
+            echo "Release suites must complete with zero skipped tests."
+            exit 1
+          fi
+
+      - name: Pack public packages
+        shell: bash
+        run: |
+          projects=(
+            src/StorageFlow.Abstractions/StorageFlow.Abstractions.csproj
+            src/StorageFlow.Core/StorageFlow.Core.csproj
+            src/StorageFlow.Provider.S3/StorageFlow.Provider.S3.csproj
+            src/StorageFlow.Provider.Minio/StorageFlow.Provider.Minio.csproj
+            src/StorageFlow.Provider.RustFs/StorageFlow.Provider.RustFs.csproj
+            src/StorageFlow.Extension.Redis/StorageFlow.Extension.Redis.csproj
+          )
+          for project in "${projects[@]}"; do
+            dotnet pack "$project" -c Release --no-build --no-restore \
+              -p:Version=${{ steps.version.outputs.value }} \
+              -o artifacts/packages
+          done
+
+      - name: Verify release packages
+        shell: bash
+        run: |
+          package_count=$(find artifacts/packages -maxdepth 1 -name '*.nupkg' \
+            ! -name '*.snupkg' | wc -l | tr -d ' ')
+          symbol_count=$(find artifacts/packages -maxdepth 1 -name '*.snupkg' \
+            | wc -l | tr -d ' ')
+          if [ "$package_count" -ne 6 ] || [ "$symbol_count" -ne 6 ]; then
+            echo "Expected 6 packages and 6 symbol packages; found $package_count and $symbol_count."
+            exit 1
+          fi
+
+          for package in artifacts/packages/*.nupkg; do
+            [[ "$package" == *.snupkg ]] && continue
+            if unzip -p "$package" '*.nuspec' | grep -q 'dependency id="StorageFlow.Testing"'; then
+              echo "StorageFlow.Testing dependency leaked into $package."
+              exit 1
+            fi
+            if unzip -p "$package" 'lib/net9.0/*.dll' | strings \
+              | grep -E 'InMemoryStorageProvider|UseInMemory'; then
+              echo "InMemory APIs leaked into $package."
+              exit 1
+            fi
+          done
+
+      - name: NuGet login through trusted publishing
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: mhmtdev
+
+      - name: Publish packages to NuGet.org
+        shell: bash
+        run: |
+          for package in artifacts/packages/*.nupkg; do
+            [[ "$package" == *.snupkg ]] && continue
+            dotnet nuget push "$package" \
+              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          release_args=(--generate-notes --verify-tag)
+          if [[ "${{ steps.version.outputs.value }}" == *-* ]]; then
+            release_args+=(--prerelease)
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            artifacts/packages/*.nupkg artifacts/packages/*.snupkg \
+            "${release_args[@]}"
+
+      - name: Upload release artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-${{ steps.version.outputs.value }}
+          path: |
+            artifacts/packages/*.nupkg
+            artifacts/packages/*.snupkg
+          if-no-files-found: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-test-results-${{ steps.version.outputs.value }}
+          path: '**/TestResults/**'
