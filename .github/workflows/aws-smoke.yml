@@ -4,38 +4,69 @@ on:
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:
+    inputs:
+      force_run:
+        description: Run even when the AWS_SMOKE_ENABLED repository variable is not true
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
   id-token: write
 
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+
 jobs:
   aws-smoke:
+    if: vars.AWS_SMOKE_ENABLED == 'true' || inputs.force_run == true
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: aws-integration
     env:
       STORAGEFLOW_TEST_AWS_ENABLED: 'true'
       STORAGEFLOW_TEST_AWS_REGION: ${{ vars.AWS_REGION }}
       STORAGEFLOW_TEST_AWS_BUCKET: ${{ vars.AWS_TEST_BUCKET }}
       STORAGEFLOW_TEST_AWS_PREFIX: storageflow-tests
+      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 9.0.x
+      - name: Validate AWS integration configuration
+        shell: bash
+        run: |
+          missing=()
+          for name in AWS_ROLE_ARN AWS_REGION STORAGEFLOW_TEST_AWS_BUCKET; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing aws-integration environment variables: ${missing[*]}"
+            echo "Configure AWS_ROLE_ARN, AWS_REGION, and AWS_TEST_BUCKET under:"
+            echo "Settings > Environments > aws-integration > Environment variables"
+            exit 1
+          fi
       - name: Configure AWS credentials through OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
       - run: dotnet restore tests/StorageFlow.Tests.Cloud/StorageFlow.Tests.Cloud.csproj
       - name: Run AWS smoke tests
         run: >-
           dotnet test tests/StorageFlow.Tests.Cloud/StorageFlow.Tests.Cloud.csproj
-          -c Release --no-restore --logger "trx;LogFileName=aws-cloud.trx"
+          -c Release --no-restore -p:TreatWarningsAsErrors=true
+          --logger "trx;LogFileName=aws-cloud.trx"
       - name: Upload AWS test results
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: always() && hashFiles('**/TestResults/**') != ''
+        uses: actions/upload-artifact@v7
         with:
           name: aws-cloud-results
           path: '**/TestResults/**'

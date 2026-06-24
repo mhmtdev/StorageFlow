@@ -1,0 +1,16 @@
+---
+description: StorageFlow NuGet consumer API and architecture rules
+globs: "**/*.cs,**/*.csproj,**/appsettings*.json"
+alwaysApply: false
+---
+
+# StorageFlow Consumer Rules
+
+Read `docs/storageflow/STORAGEFLOW.md` before generating StorageFlow code.
+Supporting examples and fixes are in `docs/storageflow/examples.md` and
+`docs/storageflow/troubleshooting.md`.
+
+Use `IStorageService`, typed policies, official `SFProvider` tokens, streaming
+I/O, and `StorageResult`. Never bypass the framework with provider SDKs, expose
+provider selection as a raw client string, commit credentials, or invent APIs
+outside the documented v1 scope.

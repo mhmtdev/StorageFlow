@@ -243,6 +243,7 @@ to be a content hash.
 
 - [GitHub repository](https://github.com/mhmtdev/StorageFlow)
 - [Minimal API sample](https://github.com/mhmtdev/StorageFlow/tree/main/samples/StorageFlow.Sample.Api)
+- [AI agent integration guide](https://github.com/mhmtdev/StorageFlow/tree/main/docs/ai)
 - [Contributing](https://github.com/mhmtdev/StorageFlow/blob/main/CONTRIBUTING.md)
 - [Security policy](https://github.com/mhmtdev/StorageFlow/blob/main/SECURITY.md)
 

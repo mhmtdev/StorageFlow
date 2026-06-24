@@ -78,6 +78,21 @@ AWS_REGION
 AWS_TEST_BUCKET
 ```
 
+The nightly workflow is opt-in. Also create this repository-level Actions
+variable under **Settings > Secrets and variables > Actions > Variables**:
+
+```text
+AWS_SMOKE_ENABLED=true
+```
+
+Without that variable, scheduled AWS runs are skipped instead of producing a
+failed deployment. A manual run can set `force_run` to validate the environment
+configuration before enabling the nightly schedule.
+
+GitHub records jobs that reference `environment: aws-integration` as
+deployments. This is expected environment/audit behavior; the workflow does not
+deploy an application.
+
 The IAM role needs `s3:ListBucket` for the configured bucket and
 `s3:GetObject`, `s3:PutObject`, and `s3:DeleteObject` under the
 `storageflow-tests/*` prefix. Add a one-day lifecycle rule for that prefix as a

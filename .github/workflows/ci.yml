@@ -22,8 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 9.0.x
       - run: dotnet restore StorageFlow.sln
@@ -92,7 +92,7 @@ jobs:
             fi
           done
       - name: Upload NuGet packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages
           path: |
@@ -101,7 +101,7 @@ jobs:
           if-no-files-found: error
       - name: Upload fast test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fast-test-results
           path: '**/TestResults/**'
@@ -113,8 +113,8 @@ jobs:
     env:
       STORAGEFLOW_TEST_DOCKER: 'true'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 9.0.x
       - name: Verify Docker availability
@@ -136,7 +136,7 @@ jobs:
           fi
       - name: Upload integration test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docker-integration-results
           path: '**/TestResults/**'
